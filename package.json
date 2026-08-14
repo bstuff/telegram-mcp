@@ -1,0 +1,29 @@
+{
+  "name": "telegram-mcp",
+  "version": "1.0.1",
+  "description": "MCP server for a personal Telegram account: read chats, send messages, run polls",
+  "type": "module",
+  "bin": {
+    "telegram-mcp": "./bin/telegram-mcp.ts"
+  },
+  "scripts": {
+    "start": "node bin/telegram-mcp.ts",
+    "login": "node bin/login.ts",
+    "check": "node bin/login.ts --check",
+    "typecheck": "tsc --noEmit",
+    "bundle": "node scripts/bundle.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "big-integer": "^1.6.52",
+    "telegram": "^2.26.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  }
+}
