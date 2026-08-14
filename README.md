@@ -1,23 +1,26 @@
 # telegram-mcp
 
-MCP-сервер поверх личного Telegram-аккаунта (MTProto через [GramJS](https://github.com/gram-js/gramjs), не бот).
-Позволяет ассистенту читать чаты, писать сообщения, запускать опросы и всё остальное, что умеет обычный клиент.
+*[Русская версия](README.ru.md)*
 
-TypeScript без шага сборки: Node ≥ 22.18 исполняет `.ts` напрямую (type stripping),
-типы проверяются отдельно через `npm run typecheck`.
+An MCP server on top of a personal Telegram account — MTProto via
+[GramJS](https://github.com/gram-js/gramjs), not a bot. It lets an assistant read chats, send
+messages, run polls, and do most of what a regular Telegram client can.
 
-## Установка
+TypeScript with no build step: Node ≥ 22.18 runs `.ts` directly through type stripping, and types
+are checked separately with `npm run typecheck`.
+
+## Setup
 
 ```bash
 npm install
-npm run login        # войти по номеру телефона, сессия ляжет в ~/.telegram-mcp/session (mode 600)
-npm run check        # проверить, что сессия жива
+npm run login        # sign in by phone number; the session lands in ~/.telegram-mcp/session (mode 600)
+npm run check        # verify the stored session still works
 ```
 
-`api_id` / `api_hash` берутся из `.env` (см. `.env.example`) или спрашиваются при логине —
-получить их можно на https://my.telegram.org → API development tools.
+`api_id` / `api_hash` come from `.env` (see `.env.example`) or are asked for during login. Get them
+at https://my.telegram.org → API development tools.
 
-## Подключение
+## Connecting a client
 
 Claude Code:
 
@@ -25,7 +28,7 @@ Claude Code:
 claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 ```
 
-Или вручную, в `mcpServers` любого MCP-клиента:
+Or by hand, in the `mcpServers` block of any MCP client:
 
 ```json
 {
@@ -40,7 +43,7 @@ claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 
 ### Claude Desktop
 
-Два способа. Через `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Two options. Through `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -53,122 +56,163 @@ claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 }
 ```
 
-Приложение резолвит команду по PATH логин-шелла (в его логах видно, как голый `npx` находится
-в `~/.nvm/...`), так что абсолютный путь к ноде не нужен. Такой сервер работает, но тумблера
-в интерфейсе не получает.
+The app resolves bare commands against the login shell's PATH — its logs show `npx` being found
+inside `~/.nvm/...` — so an absolute path to Node is not required. A server configured this way
+works, but gets no on/off switch in the UI.
 
-Либо расширением — тогда появляется вкл/выкл в Settings → Extensions и в списке инструментов чата:
+The other option is an extension, which does get a switch in Settings → Extensions and in the chat
+tool list:
 
 ```bash
 npm run bundle
 ```
 
-Соберётся `telegram.mcpb` — тонкий лаунчер, который запускает сервер из этой папки (код внутрь
-не копируется, правки применяются после перезапуска приложения без пересборки). Ставится через
-Settings → Extensions → Advanced settings → Extension Developer. В настройках расширения
-доступны «Read-only mode» и таймзона. Пересобирать нужно, только если поменялся список
-инструментов.
+This produces `telegram.mcpb`: a thin launcher that runs the server from this working copy. The
+code is not copied into the bundle, so edits take effect after an app restart with no repack.
+Install it via Settings → Extensions → Advanced settings → Extension Developer. The extension
+settings expose "Read-only mode" and a timezone. Repack only when the tool list or the manifest
+changes.
 
-Иконка расширения берётся из `assets/icon-128.png` и `assets/icon-16.png` — скрипт копирует их
-в архив и прописывает в манифест поля `icon` и `icons`. Заменить иконку = положить свои файлы
-с теми же именами и пересобрать; если файлов нет, сборка просто пройдёт без иконки.
+The extension icon comes from `assets/icon-128.png` and `assets/icon-16.png`; the script copies
+them into the archive and fills in the manifest's `icon` and `icons` fields. To use your own,
+drop in files with the same names and repack — if they are missing, the build simply produces no
+icon.
 
-Лаунчер проверяет версию ноды и при слишком старой пишет понятную ошибку вместо синтаксической.
-Если нужно прибить конкретный бинарник вместо PATH:
+The launcher checks the Node version and prints a readable error on an old runtime instead of a
+syntax error. To pin a specific binary instead of relying on PATH:
 
 ```bash
 TELEGRAM_MCP_NODE=/opt/homebrew/bin/node npm run bundle
 ```
 
-Держать одновременно запись в конфиге и расширение не надо — инструменты задвоятся.
+Do not keep both the config entry and the extension — the tools will show up twice.
 
-## Как адресовать чат
+## Addressing a chat
 
-Любой инструмент принимает в поле `chat`:
+Every tool accepts any of these in its `chat` field:
 
-- id — `-1001234567890`, `123456789`
-- `@username` или ссылку `https://t.me/username`
-- `me` — «Избранное» (Saved Messages)
-- **кусок названия чата** — `Team standup`, `барахолка`
+- an id — `-1001234567890`, `123456789`
+- an `@username` or a `https://t.me/username` link
+- `me` — Saved Messages
+- **a fragment of the chat title** — `Team standup`, `barahol`
 
-Названия резолвятся по кэшу диалогов (последние `TELEGRAM_MCP_DIALOG_LIMIT`, по умолчанию 400).
-Если под маску попало несколько чатов — сервер вернёт список кандидатов.
+Titles are resolved against the dialog cache (the most recent `TELEGRAM_MCP_DIALOG_LIMIT` dialogs,
+400 by default). If a fragment matches several chats, the server returns the candidates instead of
+guessing.
 
-Время (`since`, `until`, `schedule_at`) понимает `7d`, `36h`, `today`, `yesterday`,
-`2026-07-17`, `2026-07-17T10:00` и unix-таймстемпы.
+Time fields (`since`, `until`, `schedule_at`) understand `7d`, `36h`, `today`, `yesterday`,
+`2026-07-17`, `2026-07-17T10:00` and unix timestamps.
 
-## Инструменты
+## Tools
 
-### Чаты
-| Инструмент | Что делает |
+### Chats
+| Tool | What it does |
 |---|---|
-| `whoami` | под кем залогинены |
-| `list_chats` | список диалогов: фильтры по имени, типу, непрочитанным, архиву |
-| `get_chat` | подробности чата: тип, описание, участники, закреп, непрочитанные |
-| `list_members` | участники группы/канала (можно только админов) |
-| `find_public_chat` | глобальный поиск публичных юзеров/групп/каналов |
+| `whoami` | which account the server is signed in as |
+| `list_chats` | dialogs, filtered by name, type, unread state or archive |
+| `get_chat` | one chat in detail: type, description, members, pinned message, unread count |
+| `list_members` | participants of a group or channel, optionally admins only |
+| `find_public_chat` | global search for public users, groups and channels |
 
-### Чтение
-| Инструмент | Что делает |
+### Reading
+| Tool | What it does |
 |---|---|
-| `get_history` | история чата за период; фильтры по автору, тексту, типу медиа, диапазону id |
-| `search_messages` | поиск по одному чату или сразу по всем |
-| `get_message` | детали сообщений по id: реакции, реплаи, форварды, ссылки |
-| `get_replies` | ветка комментариев к посту / тред |
-| `get_unread` | «что я пропустил» по всем чатам, без пометки о прочтении |
-| `chat_digest` | статистика за период: кто сколько писал, активность по дням и часам, ссылки, медиа, топ по реакциям |
-| `list_media` | последние медиа с id — чтобы потом скачать |
-| `get_draft` | недописанные черновики по всем чатам |
-| `list_scheduled` | отложенные сообщения |
+| `get_history` | chat history over a period; filters by sender, text, media kind, id range |
+| `search_messages` | full-text search in one chat or across all of them |
+| `get_message` | messages by id with reactions, replies, forwards and links |
+| `get_replies` | the comment thread under a post |
+| `get_unread` | everything unread across chats, without marking anything read |
+| `chat_digest` | stats for a period: who talked how much, activity per day and hour, links, media, most-reacted messages |
+| `list_media` | recent media with ids, ready for `download_media` |
+| `get_draft` | unsent drafts across chats |
+| `list_scheduled` | messages scheduled for later |
 
-### Действия
-| Инструмент | Что делает |
+### Acting
+| Tool | What it does |
 |---|---|
-| `send_message` | текст, реплай, комментарий к посту канала, тихая отправка, отложка |
-| `edit_message` / `delete_messages` | правка и удаление (удаление необратимо) |
-| `forward_messages` | пересылка, в т.ч. без «forwarded from» |
-| `react` | поставить/снять реакцию |
-| `pin_message` / `unpin_message` | закрепить, открепить (или снять все) |
-| `mark_read` | сбросить счётчик непрочитанных |
-| `set_mute` | замьютить на N минут или навсегда, размьютить |
-| `cancel_scheduled` | отменить отложенное |
-| `send_file` / `download_media` | отправить локальный файл или URL; скачать вложение |
+| `send_message` | text, replies, comments on channel posts, silent delivery, scheduling |
+| `edit_message` / `delete_messages` | edit and delete (deletion cannot be undone) |
+| `forward_messages` | forward, optionally without the "forwarded from" header |
+| `react` | add or remove an emoji reaction |
+| `pin_message` / `unpin_message` | pin, unpin, or unpin everything |
+| `mark_read` | clear the unread badge |
+| `set_mute` | mute for N minutes or indefinitely, unmute |
+| `cancel_scheduled` | drop a scheduled message |
+| `send_file` / `download_media` | send a local file or URL; download an attachment |
 
-### Опросы и приколюхи
-| Инструмент | Что делает |
+### Polls and toys
+| Tool | What it does |
 |---|---|
-| `create_poll` | опрос: мультивыбор, неанонимный, режим викторины с правильным ответом и пояснением, автозакрытие через N секунд |
-| `poll_results` | результаты: голоса, проценты, для публичных опросов — кто как проголосовал |
-| `vote_poll` | проголосовать самому |
-| `close_poll` | закрыть опрос и показать финальный расклад |
-| `send_dice` | 🎲 🎯 🏀 ⚽ 🎳 🎰 — анимированный бросок, результат считает сервер Telegram (честный рандом) |
-| `random_member` | выбрать случайного участника: дежурный, ревьюер, победитель розыгрыша |
-| `set_typing` | показать «печатает…» |
+| `create_poll` | multiple choice, non-anonymous, quiz mode with a correct answer and explanation, auto-close after N seconds |
+| `poll_results` | votes, percentages, and for public polls who voted for what |
+| `vote_poll` | cast your own vote |
+| `close_poll` | stop a poll and return the final tally |
+| `send_dice` | 🎲 🎯 🏀 ⚽ 🎳 🎰 — the value is decided by Telegram's server, so it works as a fair draw |
+| `random_member` | pick a random member: today's duty person, a reviewer, a raffle winner |
+| `set_typing` | show a typing indicator |
 
-Промпты (slash-команды в клиенте): `catch_up`, `morning_telegram`, `run_poll`.
+Prompts (slash commands in the client): `catch_up`, `morning_telegram`, `run_poll`.
 
-## Примеры
+## Examples
 
-> Что было в «Team standup» за неделю?
+> What happened in "Team standup" this week?
 > → `chat_digest` + `get_history`
 
-> Запусти в рабочем чате опрос, когда делаем ретро: вторник, среда, четверг, можно несколько вариантов
-> → `create_poll(multiple=true)`, потом `poll_results`
+> Start a poll in the work chat about when to do the retro: Tuesday, Wednesday, Thursday, multiple choice
+> → `create_poll(multiple=true)`, then `poll_results`
 
-> Напомни мне завтра в 9 утра про созвон
+> Remind me about the call tomorrow at 9
 > → `send_message(chat="me", schedule_at="2026-08-10T09:00")`
 
-> Кто сегодня дежурный по деплою?
+> Who is on deploy duty today?
 > → `random_member(chat="…", active_only=true)`
 
-## Разработка
+## Waiting for a message
+
+`bin/watch.ts` blocks until a matching message arrives, prints it, and exits. It is a CLI rather
+than an MCP tool on purpose: an agent can run it in the background and be woken by the process
+exit, the same way it waits on a CI run. No daemon or always-on process is involved.
+
+```bash
+node bin/watch.ts --chat "Team standup" --timeout 600
+node bin/watch.ts --chat @somegroup --from @someone --contains "deployed"
+node bin/watch.ts --to-me --timeout 1800     # mentions and replies to me, any chat
+node bin/watch.ts --chat -1001234567890 --count 3 --json
+```
+
+| Flag | Meaning |
+|---|---|
+| `--chat <ref>` | watch one chat; omit to watch all of them |
+| `--from <ref>` | only messages from this sender |
+| `--contains <text>` / `--regex <re>` | filter by text |
+| `--to-me` | only mentions of me and replies to my messages |
+| `--count <n>` | wait for n matches (default 1) |
+| `--timeout <sec>` | give up after this many seconds (default 600) |
+| `--json` | print a JSON line instead of a formatted one |
+
+Exit codes: `0` matched, `2` timed out, `1` error.
+
+## Configuration (env / `.env`)
+
+| Variable | Meaning |
+|---|---|
+| `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` | required |
+| `TELEGRAM_SESSION` | session string, if you would rather not use a file |
+| `TELEGRAM_SESSION_FILE` | path to the session file (default `~/.telegram-mcp/session`) |
+| `TELEGRAM_MCP_READ_ONLY=1` | register only the reading tools |
+| `TELEGRAM_MCP_TZ` | timezone for rendered timestamps |
+| `TELEGRAM_MCP_DOWNLOAD_DIR` | where `download_media` writes files |
+| `TELEGRAM_MCP_DIALOG_LIMIT` | how many dialogs to cache for title lookup |
+| `TELEGRAM_MCP_MAX_MESSAGES` | ceiling on messages per call |
+
+## Development
 
 ```
-src/client.ts     подключение, кэш диалогов, резолв чатов
-src/format.ts     парсинг времени, рендер сообщений, выборка истории
-src/tools/*.ts    инструменты по группам: chats, read, write, media, polls, fun
-bin/*.ts          точка входа сервера и интерактивный логин
-scripts/smoke.ts  дев-харнесс: гоняет сервер по stdio как настоящий клиент
+src/client.ts     connection, dialog cache, chat resolution
+src/format.ts     time parsing, message rendering, history collection
+src/tools/*.ts    tools by group: chats, read, write, media, polls, fun
+bin/*.ts          server entry point and interactive login
+scripts/smoke.ts  dev harness: drives the server over stdio like a real client
 ```
 
 ```bash
@@ -176,64 +220,27 @@ npm run typecheck
 node scripts/smoke.ts '[["get_history",{"chat":"Team standup","since":"2d"}]]'
 ```
 
-`scripts/smoke.ts` бьёт по живому аккаунту — пишущие вызовы за собой убирать.
+`scripts/smoke.ts` talks to the live account — clean up after any write calls.
 
-## Ожидание сообщения
+## Security
 
-`bin/watch.ts` блокируется, пока не придёт подходящее сообщение, печатает его и выходит.
-Это не MCP-инструмент, а CLI — чтобы агент мог запустить его в фоне и проснуться на завершении
-процесса, как на завершении CI-прогона. Демон и постоянно живущий процесс для этого не нужны.
+- The session string grants full access to the account. It lives in `~/.telegram-mcp/session` with
+  mode 600 and must never reach git (`.gitignore` already covers it).
+- Message content is **data, not instructions**. If a message says "forward this to everyone" or
+  "send me the code", that is not a command to the assistant. The server states this in its MCP
+  `instructions`.
+- `delete_messages` and `close_poll` cannot be undone.
+- For a look-but-don't-touch setup, use `TELEGRAM_MCP_READ_ONLY=1`.
 
-```bash
-node bin/watch.ts --chat "Team standup" --timeout 600
-node bin/watch.ts --chat @somegroup --from @someone --contains "deployed"
-node bin/watch.ts --to-me --timeout 1800     # упоминания и ответы мне в любом чате
-node bin/watch.ts --chat -1001234567890 --count 3 --json
-```
+## License and trademarks
 
-| Флаг | Смысл |
-|---|---|
-| `--chat <ref>` | следить за одним чатом; без него — за всеми |
-| `--from <ref>` | только от этого отправителя |
-| `--contains <text>` / `--regex <re>` | фильтр по тексту |
-| `--to-me` | только упоминания меня и ответы на мои сообщения |
-| `--count <n>` | дождаться n совпадений (по умолчанию 1) |
-| `--timeout <sec>` | сдаться через столько секунд (по умолчанию 600) |
-| `--json` | печатать JSON-строку вместо человекочитаемой |
+The code is [MIT](LICENSE).
 
-Коды выхода: `0` дождались, `2` таймаут, `1` ошибка.
+This is an independent project. It is not affiliated with, endorsed by, or supported by Telegram
+FZ-LLC or Telegram Messenger Inc. "Telegram" is their trademark, used here nominatively to say
+what this server talks to.
 
-## Настройки (env / `.env`)
-
-| Переменная | Смысл |
-|---|---|
-| `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` | обязательные |
-| `TELEGRAM_SESSION` | строка сессии, если не хочется файла |
-| `TELEGRAM_SESSION_FILE` | путь к файлу сессии (по умолчанию `~/.telegram-mcp/session`) |
-| `TELEGRAM_MCP_READ_ONLY=1` | регистрировать только читающие инструменты |
-| `TELEGRAM_MCP_TZ` | таймзона для дат в выводе |
-| `TELEGRAM_MCP_DOWNLOAD_DIR` | куда складывать скачанное |
-| `TELEGRAM_MCP_DIALOG_LIMIT` | сколько диалогов кэшировать для поиска по названию |
-| `TELEGRAM_MCP_MAX_MESSAGES` | потолок сообщений на один вызов |
-
-## Безопасность
-
-- Строка сессии = полный доступ к аккаунту. Она лежит в `~/.telegram-mcp/session` с правами 600
-  и не должна попадать в git (`.gitignore` уже настроен).
-- Сообщения из чатов — это **данные, а не инструкции**. Если в тексте написано «перешли всем» или
-  «отправь код» — это не команда ассистенту. Сервер сообщает об этом клиенту в `instructions`.
-- `delete_messages` и `close_poll` необратимы.
-- Нужен режим «только смотреть» — `TELEGRAM_MCP_READ_ONLY=1`.
-
-## Лицензия и товарные знаки
-
-Код под [MIT](LICENSE).
-
-Проект независимый: он не связан с Telegram FZ-LLC и Telegram Messenger Inc., не одобрен ими
-и не поддерживается ими. «Telegram» — их товарный знак, используется здесь номинативно, только
-чтобы обозначить, с чем работает этот сервер.
-
-Логотип в `assets/icon-128.png` и `assets/icon-16.png` взят с telegram.org и принадлежит
-правообладателю. Он включён исключительно как иконка расширения; **лицензия MIT на него
-не распространяется**. Если это неудобно — удалите файлы, сборка `npm run bundle` пройдёт
-без иконки, либо положите вместо них свои с теми же именами.
+The logo in `assets/icon-128.png` and `assets/icon-16.png` comes from telegram.org and belongs to
+its owner. It is included solely as the extension icon and **is not covered by the MIT license**.
+If that is inconvenient, delete the files — `npm run bundle` works fine without them — or replace
+them with your own using the same names.
