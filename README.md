@@ -17,8 +17,39 @@ npm run login        # sign in by phone number; the session lands in ~/.telegram
 npm run check        # verify the stored session still works
 ```
 
-`api_id` / `api_hash` come from `.env` (see `.env.example`) or are asked for during login. Get them
-at https://my.telegram.org → API development tools.
+`api_id` / `api_hash` come from `.env` (see `.env.example`) or are asked for during login.
+
+### Getting api_id / api_hash
+
+These identify the *application*, not your account — every MTProto client needs its own pair.
+It takes about a minute:
+
+1. Open https://my.telegram.org and enter your phone number in international format (`+971…`).
+2. The confirmation code arrives **inside Telegram**, as a message from the official Telegram
+   service account — not by SMS. Enter it on the page.
+3. Click **API development tools**.
+4. Fill in the form. Only *App title* and *Short name* are required; *Short name* must be 5–32
+   characters, letters and digits. Leave the URL empty and pick `Desktop` (or `Other`) as the
+   platform — none of this affects how the app works.
+5. Press **Create application**. The page then shows `App api_id` (a number) and `App api_hash`
+   (32 hex characters).
+6. Put both into `.env`:
+
+   ```bash
+   cp .env.example .env
+   # TELEGRAM_API_ID=1234567
+   # TELEGRAM_API_HASH=0123456789abcdef0123456789abcdef
+   ```
+
+Worth knowing:
+
+- The pair is reusable — one app works for every account you sign in with, on any number of
+  machines. Creating a second one is unnecessary.
+- Treat `api_hash` as a secret. It does not grant access to your account on its own, but Telegram
+  can ban an `api_id` that gets used for spam, and there is no way to delete an app once created.
+  `.env` is gitignored for that reason.
+- `my.telegram.org` is unreachable from some networks. If the page will not load or the form
+  errors out on submit, try another network or browser — the site is noticeably flaky.
 
 ## Connecting a client
 
