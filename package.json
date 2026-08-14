@@ -1,6 +1,6 @@
 {
   "name": "telegram-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for a personal Telegram account: read chats, send messages, run polls",
   "license": "MIT",
   "type": "module",
