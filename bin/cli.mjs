@@ -29,24 +29,30 @@ Usage:
 Credentials: TELEGRAM_API_ID / TELEGRAM_API_HASH in the environment or in
 ~/.telegram-mcp/.env; the session string is stored in ~/.telegram-mcp/session.`;
 
-const run = (script, argv) => {
+// A checkout runs the .ts sources via type stripping. The npm package ships
+// only compiled dist/ (plus this file), because Node refuses to strip types
+// under node_modules — so "no .ts next to me" means we are installed.
+const { existsSync } = await import("node:fs");
+const inCheckout = existsSync(new URL("./telegram-mcp.ts", import.meta.url));
+
+const run = (name, argv) => {
   process.argv = [process.argv[0], process.argv[1], ...argv];
-  return import(script);
+  return import(inCheckout ? `./${name}.ts` : `../dist/bin/${name}.js`);
 };
 
 switch (sub) {
   case undefined:
   case "serve":
-    await run("./telegram-mcp.ts", rest);
+    await run("telegram-mcp", rest);
     break;
   case "login":
-    await run("./login.ts", rest);
+    await run("login", rest);
     break;
   case "check":
-    await run("./login.ts", ["--check", ...rest]);
+    await run("login", ["--check", ...rest]);
     break;
   case "watch":
-    await run("./watch.ts", rest);
+    await run("watch", rest);
     break;
   case "--version":
   case "-v":

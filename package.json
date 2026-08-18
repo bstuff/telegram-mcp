@@ -1,6 +1,6 @@
 {
   "name": "@bstuff/telegram-mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP server for a personal Telegram account: read chats, send messages, run polls",
   "license": "MIT",
   "type": "module",
@@ -8,8 +8,8 @@
     "telegram-mcp": "./bin/cli.mjs"
   },
   "files": [
-    "bin",
-    "src",
+    "bin/cli.mjs",
+    "dist",
     ".env.example",
     "README.ru.md"
   ],
@@ -38,7 +38,8 @@
     "watch": "node bin/cli.mjs watch",
     "typecheck": "tsc --noEmit",
     "bundle": "node scripts/bundle.ts",
-    "prepublishOnly": "tsc --noEmit"
+    "prepublishOnly": "npm run typecheck && npm run build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
   },
   "engines": {
     "node": ">=22.18"

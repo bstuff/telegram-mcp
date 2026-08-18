@@ -7,3 +7,5 @@ downloads/
 .DS_Store
 mcpb/
 *.mcpb
+dist/
+*.tgz

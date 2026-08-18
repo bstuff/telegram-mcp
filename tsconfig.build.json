@@ -1,0 +1,14 @@
+{
+  // Publish-time build: the checkout runs .ts directly via type stripping, but
+  // Node refuses to strip types under node_modules, so npm ships compiled JS.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
+    "rewriteRelativeImportExtensions": true,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts", "bin/**/*.ts"]
+}
