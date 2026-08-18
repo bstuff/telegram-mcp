@@ -1,18 +1,44 @@
 {
-  "name": "telegram-mcp",
-  "version": "1.0.2",
+  "name": "@bstuff/telegram-mcp",
+  "version": "1.1.0",
   "description": "MCP server for a personal Telegram account: read chats, send messages, run polls",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "telegram-mcp": "./bin/telegram-mcp.ts"
+    "telegram-mcp": "./bin/cli.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    ".env.example",
+    "README.ru.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bstuff/telegram-mcp.git"
+  },
+  "homepage": "https://github.com/bstuff/telegram-mcp#readme",
+  "bugs": "https://github.com/bstuff/telegram-mcp/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "telegram",
+    "gramjs",
+    "mtproto",
+    "claude"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "start": "node bin/telegram-mcp.ts",
-    "login": "node bin/login.ts",
-    "check": "node bin/login.ts --check",
+    "start": "node bin/cli.mjs",
+    "login": "node bin/cli.mjs login",
+    "check": "node bin/cli.mjs check",
+    "watch": "node bin/cli.mjs watch",
     "typecheck": "tsc --noEmit",
-    "bundle": "node scripts/bundle.ts"
+    "bundle": "node scripts/bundle.ts",
+    "prepublishOnly": "tsc --noEmit"
   },
   "engines": {
     "node": ">=22.18"

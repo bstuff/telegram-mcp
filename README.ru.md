@@ -10,13 +10,24 @@ TypeScript без шага сборки: Node ≥ 22.18 исполняет `.ts`
 
 ## Установка
 
+Из npm, без клонирования:
+
 ```bash
-npm install
-npm run login        # войти по номеру телефона, сессия ляжет в ~/.telegram-mcp/session (mode 600)
-npm run check        # проверить, что сессия жива
+npx @bstuff/telegram-mcp login    # войти по номеру телефона, сессия ляжет в ~/.telegram-mcp/session (mode 600)
+npx @bstuff/telegram-mcp check    # проверить, что сессия жива
 ```
 
-`api_id` / `api_hash` берутся из `.env` (см. `.env.example`) или спрашиваются при логине.
+Либо из клона репозитория:
+
+```bash
+npm install
+npm run login
+npm run check
+```
+
+`api_id` / `api_hash` берутся из окружения, из `.env` в клоне или из `~/.telegram-mcp/.env`
+(начни с `.env.example` — при установке через npx нужен именно этот путь). Если ничего не
+задано, логин спросит их сам.
 
 ### Как получить api_id / api_hash
 
@@ -55,6 +66,8 @@ npm run check        # проверить, что сессия жива
 Claude Code:
 
 ```bash
+claude mcp add telegram -- npx -y @bstuff/telegram-mcp
+# либо из клона:
 claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 ```
 
@@ -64,8 +77,8 @@ claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 {
   "mcpServers": {
     "telegram": {
-      "command": "node",
-      "args": ["/absolute/path/to/telegram-mcp/bin/telegram-mcp.ts"]
+      "command": "npx",
+      "args": ["-y", "@bstuff/telegram-mcp"]
     }
   }
 }
@@ -79,8 +92,8 @@ claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 {
   "mcpServers": {
     "telegram": {
-      "command": "node",
-      "args": ["/absolute/path/to/telegram-mcp/bin/telegram-mcp.ts"]
+      "command": "npx",
+      "args": ["-y", "@bstuff/telegram-mcp"]
     }
   }
 }
@@ -213,7 +226,7 @@ node scripts/smoke.ts '[["get_history",{"chat":"Team standup","since":"2d"}]]'
 
 ## Ожидание сообщения
 
-`bin/watch.ts` блокируется, пока не придёт подходящее сообщение, печатает его и выходит.
+`bin/watch.ts` (при установке из npm — `telegram-mcp watch`) блокируется, пока не придёт подходящее сообщение, печатает его и выходит.
 Это не MCP-инструмент, а CLI — чтобы агент мог запустить его в фоне и проснуться на завершении
 процесса, как на завершении CI-прогона. Демон и постоянно живущий процесс для этого не нужны.
 

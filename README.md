@@ -11,13 +11,24 @@ are checked separately with `npm run typecheck`.
 
 ## Setup
 
+From npm, no clone needed:
+
 ```bash
-npm install
-npm run login        # sign in by phone number; the session lands in ~/.telegram-mcp/session (mode 600)
-npm run check        # verify the stored session still works
+npx @bstuff/telegram-mcp login    # sign in by phone number; the session lands in ~/.telegram-mcp/session (mode 600)
+npx @bstuff/telegram-mcp check    # verify the stored session still works
 ```
 
-`api_id` / `api_hash` come from `.env` (see `.env.example`) or are asked for during login.
+Or from a checkout:
+
+```bash
+npm install
+npm run login
+npm run check
+```
+
+`api_id` / `api_hash` come from the environment, from `.env` in a checkout, or from
+`~/.telegram-mcp/.env` (start from `.env.example` — this is the place when installed via npx).
+The login command asks for them if neither is set.
 
 ### Getting api_id / api_hash
 
@@ -56,6 +67,8 @@ Worth knowing:
 Claude Code:
 
 ```bash
+claude mcp add telegram -- npx -y @bstuff/telegram-mcp
+# or, from a checkout:
 claude mcp add telegram -- node ~/telegram-mcp/bin/telegram-mcp.ts
 ```
 
@@ -65,8 +78,8 @@ Or by hand, in the `mcpServers` block of any MCP client:
 {
   "mcpServers": {
     "telegram": {
-      "command": "node",
-      "args": ["/absolute/path/to/telegram-mcp/bin/telegram-mcp.ts"]
+      "command": "npx",
+      "args": ["-y", "@bstuff/telegram-mcp"]
     }
   }
 }
@@ -80,8 +93,8 @@ Two options. Through `~/Library/Application Support/Claude/claude_desktop_config
 {
   "mcpServers": {
     "telegram": {
-      "command": "node",
-      "args": ["/absolute/path/to/telegram-mcp/bin/telegram-mcp.ts"]
+      "command": "npx",
+      "args": ["-y", "@bstuff/telegram-mcp"]
     }
   }
 }
@@ -200,7 +213,7 @@ Prompts (slash commands in the client): `catch_up`, `morning_telegram`, `run_pol
 
 ## Waiting for a message
 
-`bin/watch.ts` blocks until a matching message arrives, prints it, and exits. It is a CLI rather
+`bin/watch.ts` (`telegram-mcp watch` when installed from npm) blocks until a matching message arrives, prints it, and exits. It is a CLI rather
 than an MCP tool on purpose: an agent can run it in the background and be woken by the process
 exit, the same way it waits on a CI run. No daemon or always-on process is involved.
 
