@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Telegram MCP server (stdio transport).
 //
-// stdout is reserved for JSON-RPC — GramJS and anything else that logs must go
+// stdout is reserved for JSON-RPC — teleproto and anything else that logs must go
 // to stderr, so console.log is redirected before any other module loads.
 console.log = (...args: unknown[]) => console.error(...args);
 console.info = (...args: unknown[]) => console.error(...args);

@@ -10,8 +10,8 @@
 //
 // Exit codes: 0 matched, 2 timed out, 1 error.
 
-import { NewMessage } from "telegram/events/index.js";
-import type { NewMessageEvent } from "telegram/events/NewMessage.js";
+import { NewMessage } from "teleproto/events/index.js";
+import type { NewMessageEvent } from "teleproto/events/NewMessage.js";
 import { disconnect, getClient, getMe, resolveChat } from "../src/client.ts";
 import { formatMessage, senderName } from "../src/format.ts";
 import type { Message } from "../src/format.ts";
@@ -90,7 +90,7 @@ Exit codes: 0 matched, 2 timed out, 1 error.`;
 
 const opts = parseArgs(process.argv.slice(2));
 
-// stdout carries only matches (one per line, parseable with --json), so GramJS
+// stdout carries only matches (one per line, parseable with --json), so teleproto
 // and our own progress chatter are pushed to stderr.
 const emit = (line: string) => process.stdout.write(`${line}\n`);
 console.log = (...args: unknown[]) => console.error(...args);

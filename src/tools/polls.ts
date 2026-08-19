@@ -1,16 +1,37 @@
 import crypto from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import bigInt from "big-integer";
-import type { TelegramClient } from "telegram";
+import type { TelegramClient } from "teleproto";
+import tlDefinitions from "teleproto/tl/generated/api-definitions.js";
 import { Api, entityName, getClient, resolveChat } from "../client.ts";
 import { messageLink, pollAnswerText, pollQuestion } from "../format.ts";
 import type { Entity } from "../types.ts";
 import { bar, chatArg, pct, tool, z } from "./helpers.ts";
 
+/*
+ * Quiz workaround. Production servers still validate correct_answers per the
+ * pre-228 schema: every Vector<int> encoding (0-based index exactly as
+ * tdesktop dev sends, 1-based, option-byte values) is rejected with
+ * QUIZ_CORRECT_ANSWER_INVALID, while option bytes sent through the old
+ * inputMediaPoll#f94e5f1 constructor are accepted. So correct_answers is
+ * re-typed to bytes here, and quiz media below is stamped with the legacy
+ * constructor id (safe: the new optional fields stay unset, which serializes
+ * to a byte layout identical to the old schema). Drop both patches when the
+ * servers start accepting the layer-228 form.
+ */
+type TlDef = { name: string; argsConfig: Record<string, { type: string }> };
+(tlDefinitions as unknown as TlDef[]).find((d) => d.name === "InputMediaPoll")!.argsConfig
+  .correctAnswers!.type = "bytes";
+const LEGACY_INPUT_MEDIA_POLL_ID = 0x0f94e5f1;
+
 /** Random 56-bit id — poll ids only need to be unique per chat. */
 const randomPollId = () => bigInt(crypto.randomBytes(7).toString("hex"), 16);
 
 const asTextWithEntities = (text: string) => new Api.TextWithEntities({ text, entities: [] });
+
+/** Layer 228 widened poll.answers to TypePollAnswer[]; classic polls only carry PollAnswer. */
+const pollAnswers = (poll: Api.Poll): Api.PollAnswer[] =>
+  poll.answers.filter((a): a is Api.PollAnswer => a.className === "PollAnswer");
 
 interface FetchedPoll {
   client: TelegramClient;
@@ -35,11 +56,11 @@ function renderResults(
   results: Api.PollResults | undefined,
   voters?: Map<number, string[]>
 ): string {
-  const answers = poll.answers;
+  const answers = pollAnswers(poll);
   const byOption = new Map<string, Api.PollAnswerVoters>();
   for (const r of results?.results ?? []) byOption.set(r.option.toString("hex"), r);
   const total = results?.totalVoters ?? 0;
-  const maxVotes = Math.max(1, ...(results?.results ?? []).map((r) => r.voters));
+  const maxVotes = Math.max(1, ...(results?.results ?? []).map((r) => r.voters ?? 0));
 
   const lines = answers.map((answer, i) => {
     const r = byOption.get(answer.option.toString("hex"));
@@ -121,6 +142,8 @@ export function registerPollTools(server: McpServer): void {
 
       const poll = new Api.Poll({
         id: randomPollId(),
+        // Required since layer 228; the server assigns the real value.
+        hash: bigInt(0),
         question: asTextWithEntities(question),
         answers: options.map(
           (opt, i) => new Api.PollAnswer({ text: asTextWithEntities(opt), option: Buffer.from([i]) })
@@ -133,10 +156,17 @@ export function registerPollTools(server: McpServer): void {
 
       const media = new Api.InputMediaPoll({
         poll,
-        correctAnswers: isQuiz ? [Buffer.from([quiz_correct_option])] : undefined,
+        // Option bytes, not indexes — see the quiz workaround note above.
+        correctAnswers: isQuiz
+          ? ([Buffer.from([quiz_correct_option])] as unknown as number[])
+          : undefined,
         solution: explanation,
         solutionEntities: explanation ? [] : undefined,
       });
+
+      if (isQuiz) {
+        (media as unknown as { CONSTRUCTOR_ID: number }).CONSTRUCTOR_ID = LEGACY_INPUT_MEDIA_POLL_ID;
+      }
 
       const message = await client.sendFile(entity, { file: media, replyTo: reply_to, silent });
       const link = messageLink(entity, message.id);
@@ -192,7 +222,7 @@ export function registerPollTools(server: McpServer): void {
       let voters: Map<number, string[]> | undefined;
       if (with_voters && poll.publicVoters) {
         voters = new Map();
-        for (const [i, answer] of poll.answers.entries()) {
+        for (const [i, answer] of pollAnswers(poll).entries()) {
           try {
             const res = await client.invoke(
               new Api.messages.GetPollVotes({
@@ -242,7 +272,7 @@ export function registerPollTools(server: McpServer): void {
     },
     async ({ chat, message_id, options }) => {
       const { client, entity, title, media } = await fetchPoll(chat, message_id);
-      const answers = media.poll.answers;
+      const answers = pollAnswers(media.poll);
       if (media.poll.closed) throw new Error(`Poll #${message_id} is already closed.`);
       if (options.length > 1 && !media.poll.multipleChoice) {
         throw new Error("This poll only accepts a single answer.");
@@ -291,6 +321,7 @@ export function registerPollTools(server: McpServer): void {
 
       const closed = new Api.Poll({
         id: media.poll.id,
+        hash: media.poll.hash,
         question: media.poll.question,
         answers: media.poll.answers,
         multipleChoice: media.poll.multipleChoice,

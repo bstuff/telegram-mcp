@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { utils } from "telegram";
+import { utils } from "teleproto";
 import { getClient, resolveChat } from "../client.ts";
 import { config } from "../config.ts";
 import type { Message } from "../format.ts";

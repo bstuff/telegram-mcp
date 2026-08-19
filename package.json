@@ -1,6 +1,6 @@
 {
   "name": "@bstuff/telegram-mcp",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MCP server for a personal Telegram account: read chats, send messages, run polls",
   "license": "MIT",
   "type": "module",
@@ -26,7 +26,8 @@
     "telegram",
     "gramjs",
     "mtproto",
-    "claude"
+    "claude",
+    "teleproto"
   ],
   "publishConfig": {
     "access": "public"
@@ -47,7 +48,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "big-integer": "^1.6.52",
-    "telegram": "^2.26.2",
+    "teleproto": "^1.228.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

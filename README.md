@@ -3,7 +3,7 @@
 *[Русская версия](README.ru.md)*
 
 An MCP server on top of a personal Telegram account — MTProto via
-[GramJS](https://github.com/gram-js/gramjs), not a bot. It lets an assistant read chats, send
+[teleproto](https://github.com/sanyok12345/teleproto), the maintained GramJS fork; not a bot. It lets an assistant read chats, send
 messages, run polls, and do most of what a regular Telegram client can.
 
 TypeScript with no build step: Node ≥ 22.18 runs `.ts` directly through type stripping, and types

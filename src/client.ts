@@ -1,6 +1,6 @@
-import { Api, TelegramClient } from "telegram";
-import { StringSession } from "telegram/sessions/index.js";
-import type { Dialog } from "telegram/tl/custom/dialog.js";
+import { Api, TelegramClient } from "teleproto";
+import { StringSession } from "teleproto/sessions/index.js";
+import type { Dialog } from "teleproto/tl/custom/dialog.js";
 import { config, readSession } from "./config.ts";
 import type { ChatKind, Entity, ResolvedChat } from "./types.ts";
 
@@ -28,11 +28,11 @@ export async function getClient(): Promise<TelegramClient> {
       autoReconnect: true,
       requestRetries: 3,
     });
-    // GramJS chatters on stdout, which would corrupt the stdio JSON-RPC stream.
+    // teleproto chatters on stdout, which would corrupt the stdio JSON-RPC stream.
     try {
       client.setLogLevel?.("none" as never);
     } catch {
-      /* older GramJS builds have no setLogLevel */
+      /* older teleproto builds have no setLogLevel */
     }
     await client.connect();
     if (!(await client.isUserAuthorized())) {
@@ -180,7 +180,7 @@ export async function resolveChat(ref: string): Promise<ResolvedChat> {
 async function resolveUncached(client: TelegramClient, key: string): Promise<Entity> {
   if (SELF_ALIASES.has(key.toLowerCase())) return (await client.getEntity("me")) as Entity;
 
-  // Numeric id — look it up in the dialog cache first so GramJS has the access hash.
+  // Numeric id — look it up in the dialog cache first so teleproto has the access hash.
   if (/^-?\d+$/.test(key)) {
     const dialogs = await getDialogs();
     const bare = key.replace(/^-100|^-/, "");

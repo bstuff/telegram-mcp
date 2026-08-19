@@ -82,7 +82,7 @@ export const parseModeArg = z
 
 export type ParseModeName = "none" | "markdown" | "markdown2" | "html";
 
-/** GramJS takes `false` to mean "do not parse at all". */
+/** teleproto takes `false` to mean "do not parse at all". */
 export function parseModeValue(mode: ParseModeName): string | false {
   switch (mode) {
     case "markdown":

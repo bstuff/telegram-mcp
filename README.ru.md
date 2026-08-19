@@ -2,7 +2,7 @@
 
 *[English version](README.md)*
 
-MCP-сервер поверх личного Telegram-аккаунта (MTProto через [GramJS](https://github.com/gram-js/gramjs), не бот).
+MCP-сервер поверх личного Telegram-аккаунта (MTProto через [teleproto](https://github.com/sanyok12345/teleproto) — живой форк GramJS; не бот).
 Позволяет ассистенту читать чаты, писать сообщения, запускать опросы и всё остальное, что умеет обычный клиент.
 
 TypeScript без шага сборки: Node ≥ 22.18 исполняет `.ts` напрямую (type stripping),

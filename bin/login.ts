@@ -8,8 +8,8 @@
 
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { TelegramClient } from "telegram";
-import { StringSession } from "telegram/sessions/index.js";
+import { TelegramClient } from "teleproto";
+import { StringSession } from "teleproto/sessions/index.js";
 import { entityName } from "../src/client.ts";
 import { config, readSession, writeSession } from "../src/config.ts";
 

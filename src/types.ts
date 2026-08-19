@@ -1,7 +1,7 @@
-import type { Api } from "telegram";
+import type { Api } from "teleproto";
 
 /**
- * GramJS declares these in define.d.ts but exports nothing from it, so the
+ * teleproto declares these in define.d.ts but exports nothing from it, so the
  * shapes we need are re-declared here.
  */
 export type Entity =

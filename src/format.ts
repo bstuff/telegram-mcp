@@ -1,4 +1,4 @@
-import type { Api as ApiNs, TelegramClient } from "telegram";
+import type { Api as ApiNs, TelegramClient } from "teleproto";
 import { Api, entityName, getClient } from "./client.ts";
 import { config } from "./config.ts";
 import type { Entity } from "./types.ts";
@@ -332,7 +332,7 @@ export async function collectMessages(entity: Entity, options: CollectOptions = 
   if (fromUser) params.fromUser = fromUser;
   if (filter) params.filter = MESSAGE_FILTERS[filter]();
   if (replyTo) params.replyTo = replyTo;
-  // Without a `since` bound, let GramJS stop after `cap` messages itself.
+  // Without a `since` bound, let teleproto stop after `cap` messages itself.
   if (!sinceTs) params.limit = cap;
 
   const out: Message[] = [];

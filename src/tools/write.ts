@@ -308,7 +308,9 @@ export function registerWriteTools(server: McpServer): void {
       const muteUntil = muted ? (minutes ? Math.floor(Date.now() / 1000) + minutes * 60 : 2147483647) : 0;
       await client.invoke(
         new Api.account.UpdateNotifySettings({
-          peer: new Api.InputNotifyPeer({ peer }),
+          // teleproto types this field as EntityLike, but a ready InputNotifyPeer
+          // is what the wire format wants and what worked against the servers.
+          peer: new Api.InputNotifyPeer({ peer }) as unknown as Api.TypeEntityLike,
           settings: new Api.InputPeerNotifySettings({ muteUntil }),
         })
       );
