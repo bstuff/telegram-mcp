@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "telegram-mcp": "./bin/cli.mjs"
+    "telegram-mcp": "bin/cli.mjs"
   },
   "files": [
     "bin/cli.mjs",
