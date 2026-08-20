@@ -182,7 +182,7 @@ Time fields (`since`, `until`, `schedule_at`) understand `7d`, `36h`, `today`, `
 | `mark_read` | clear the unread badge |
 | `set_mute` | mute for N minutes or indefinitely, unmute |
 | `cancel_scheduled` | drop a scheduled message |
-| `send_file` / `download_media` | send a local file or URL; download an attachment |
+| `send_file` / `download_media` | send a local file or URL; download an attachment, including a forwarded story |
 
 ### Polls and toys
 | Tool | What it does |

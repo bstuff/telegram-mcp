@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { TelegramClient } from "teleproto";
 import { utils } from "teleproto";
-import { getClient, resolveChat } from "../client.ts";
+import { Api, getClient, resolveChat } from "../client.ts";
 import { config } from "../config.ts";
 import type { Message } from "../format.ts";
 import { collectMessages, fmtDate, mediaSummary, messageLink, parseTime, senderName, unix } from "../format.ts";
@@ -25,6 +26,35 @@ function guessFilename(message: Message): string {
   }
   if (!ext) ext = media?.className === "MessageMediaPhoto" ? "jpg" : "bin";
   return `${message.id}_${message.date}.${ext}`;
+}
+
+/**
+ * A forwarded story carries only a reference (owner + story id), not the file,
+ * so the story itself has to be fetched before anything can be downloaded.
+ */
+async function resolveStory(
+  client: TelegramClient,
+  media: Api.MessageMediaStory
+): Promise<{ media: Api.TypeMessageMedia; label: string; caption?: string }> {
+  const owner = await client.getEntity(media.peer);
+  const handle = (owner as { username?: string }).username ?? owner.id.toString();
+
+  const res = await client.invoke(new Api.stories.GetStoriesByID({ peer: owner, id: [media.id] }));
+  const story = res.stories[0];
+  if (!story || story.className === "StoryItemDeleted") {
+    throw new Error(
+      `Story ${media.id} by @${handle} is gone — stories expire after 24 hours unless the author pinned it.`
+    );
+  }
+  if (story.className === "StoryItemSkipped") {
+    throw new Error(`Story ${media.id} by @${handle} is not available to this account.`);
+  }
+  if (story.noforwards) {
+    throw new Error(
+      `Story ${media.id} by @${handle} is marked as protected content; the author disallowed saving it.`
+    );
+  }
+  return { media: story.media, label: `story_${handle}_${media.id}`, caption: story.caption };
 }
 
 export function registerMediaTools(server: McpServer): void {
@@ -88,7 +118,8 @@ export function registerMediaTools(server: McpServer): void {
     "download_media",
     {
       title: "Download media",
-      description: "Download the media attached to a message and return the local path.",
+      description:
+        "Download the media attached to a message and return the local path. Forwarded stories are resolved to the underlying photo or video first.",
       inputSchema: {
         chat: chatArg,
         message_id: z.number().int(),
@@ -107,12 +138,30 @@ export function registerMediaTools(server: McpServer): void {
         throw new Error(`Message #${message_id} only contains a link preview, nothing to download.`);
       }
 
+      const story =
+        message.media.className === "MessageMediaStory"
+          ? await resolveStory(client, message.media)
+          : undefined;
+      const source = story?.media ?? message.media;
+
+      let name: string;
+      if (filename) {
+        name = safeName(filename);
+      } else if (story) {
+        name = `${story.label}.${source.className === "MessageMediaPhoto" ? "jpg" : "mp4"}`;
+      } else {
+        name = guessFilename(message);
+      }
+
       const targetDir = path.resolve(dir || config.downloadDir);
       fs.mkdirSync(targetDir, { recursive: true });
-      const outFile = path.join(targetDir, filename ? safeName(filename) : guessFilename(message));
-      await client.downloadMedia(message, { outputFile: outFile });
+      const outFile = path.join(targetDir, name);
+      await client.downloadMedia(source, { outputFile: outFile });
       const size = fs.existsSync(outFile) ? fs.statSync(outFile).size : 0;
-      return `Downloaded ${mediaSummary(message)} from #${message_id} → ${outFile} (${(size / 1024).toFixed(0)} KB)`;
+
+      const what = story ? `story (${mediaSummary({ media: source } as Message)})` : mediaSummary(message);
+      const caption = story?.caption ? `\ncaption: ${story.caption}` : "";
+      return `Downloaded ${what} from #${message_id} → ${outFile} (${(size / 1024).toFixed(0)} KB)${caption}`;
     }
   );
 
