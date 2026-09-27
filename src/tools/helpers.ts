@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { ensureConnected } from "../client.ts";
 import { config } from "../config.ts";
 
 export type Shape = z.ZodRawShape;
@@ -45,6 +46,9 @@ export function tool<S extends Shape>(
 
   const wrapped = async (args: unknown): Promise<CallToolResult> => {
     try {
+      // Single choke point for every tool: revive the MTProto connection if it
+      // died while the process sat idle, instead of failing the call.
+      await ensureConnected();
       const result = await handler((args ?? {}) as z.infer<z.ZodObject<S>>);
       return typeof result === "string" ? text(result) : result;
     } catch (err) {

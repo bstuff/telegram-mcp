@@ -248,6 +248,8 @@ Exit codes: `0` matched, `2` timed out, `1` error.
 | `TELEGRAM_MCP_DOWNLOAD_DIR` | where `download_media` writes files |
 | `TELEGRAM_MCP_DIALOG_LIMIT` | how many dialogs to cache for title lookup |
 | `TELEGRAM_MCP_MAX_MESSAGES` | ceiling on messages per call |
+| `TELEGRAM_MCP_LOG_LEVEL` | teleproto log level on stderr: `none` (default), `error`, `warn`, `info`, `debug` |
+| `TELEGRAM_MCP_HEALTH_INTERVAL` | seconds between connection health checks (default 60, `0` disables) |
 
 ## Development
 

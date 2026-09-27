@@ -24,20 +24,28 @@ export async function getClient(): Promise<TelegramClient> {
       );
     }
     const client = new TelegramClient(new StringSession(session), config.apiId, config.apiHash, {
-      connectionRetries: 5,
+      // A reconnect runs this many connect attempts; when they all fail the
+      // sender is marked dead and nothing ever retries it, so every later call
+      // answers "Cannot send requests while disconnected". Laptop sleep used to
+      // exhaust the old value of 5 within seconds. ensureConnected below is the
+      // real safety net; this just makes giving up much less likely.
+      connectionRetries: 20,
       autoReconnect: true,
       requestRetries: 3,
     });
-    // teleproto chatters on stdout, which would corrupt the stdio JSON-RPC stream.
+    // teleproto logs through console.log, which the entry points redirect to
+    // stderr — stdout belongs to the JSON-RPC stream. Quiet by default because
+    // it is chatty; TELEGRAM_MCP_LOG_LEVEL=info makes disconnects traceable.
     try {
-      client.setLogLevel?.("none" as never);
+      client.setLogLevel?.(config.logLevel as never);
     } catch {
-      /* older teleproto builds have no setLogLevel */
+      /* unknown level, or a build without setLogLevel */
     }
     await client.connect();
     if (!(await client.isUserAuthorized())) {
       throw new Error("Telegram session is invalid or expired. Run `npm run login` to re-auth.");
     }
+    startHealthCheck(client);
     return client;
   })();
 
@@ -47,6 +55,40 @@ export async function getClient(): Promise<TelegramClient> {
     clientPromise = null; // let the next call retry
     throw err;
   }
+}
+
+let healthTimer: NodeJS.Timeout | null = null;
+
+/**
+ * Brings the MTProto connection back after it dropped. teleproto gives up
+ * permanently once a reconnect exhausts its attempts, and the process stays
+ * alive in that state, so something has to ask it to connect again.
+ */
+export async function ensureConnected(): Promise<void> {
+  const client = await getClient();
+  if (client.connected) return;
+  console.error("[telegram-mcp] connection lost, reconnecting");
+  await client.connect();
+  if (!client.connected) {
+    throw new Error("Telegram connection is down and could not be re-established.");
+  }
+  console.error("[telegram-mcp] reconnected");
+}
+
+/**
+ * Heals the connection without waiting for a tool call, so a long-lived
+ * watcher survives sleep too. Unref'd: it must never hold the process open.
+ */
+function startHealthCheck(client: TelegramClient): void {
+  if (healthTimer || config.healthInterval <= 0) return;
+  healthTimer = setInterval(() => {
+    if (client.connected) return;
+    console.error("[telegram-mcp] health check: disconnected, reconnecting");
+    client.connect().catch((err: unknown) => {
+      console.error(`[telegram-mcp] reconnect failed: ${err instanceof Error ? err.message : err}`);
+    });
+  }, config.healthInterval * 1000);
+  healthTimer.unref();
 }
 
 export async function getMe(): Promise<Api.User> {
@@ -63,6 +105,10 @@ export async function disconnect(): Promise<void> {
   if (!clientPromise) return;
   const client = await clientPromise.catch(() => null);
   clientPromise = null;
+  if (healthTimer) {
+    clearInterval(healthTimer);
+    healthTimer = null;
+  }
   if (client) await client.disconnect().catch(() => {});
 }
 

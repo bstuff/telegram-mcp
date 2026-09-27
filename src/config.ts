@@ -56,6 +56,10 @@ export interface Config {
   timezone: string | undefined;
   /** Hard ceiling on messages a single read tool may pull. */
   maxMessages: number;
+  /** teleproto log level: none (default), error, warn, info or debug. */
+  logLevel: string;
+  /** Seconds between connection health checks; 0 disables them. */
+  healthInterval: number;
 }
 
 export const config: Config = {
@@ -68,6 +72,8 @@ export const config: Config = {
   dialogTtl: num(process.env.TELEGRAM_MCP_DIALOG_TTL, 120),
   timezone: process.env.TELEGRAM_MCP_TZ || undefined,
   maxMessages: num(process.env.TELEGRAM_MCP_MAX_MESSAGES, 3000),
+  logLevel: process.env.TELEGRAM_MCP_LOG_LEVEL || "none",
+  healthInterval: num(process.env.TELEGRAM_MCP_HEALTH_INTERVAL, 60),
 };
 
 export function readSession(): string {

@@ -261,6 +261,8 @@ node bin/watch.ts --chat -1001234567890 --count 3 --json
 | `TELEGRAM_MCP_DOWNLOAD_DIR` | куда складывать скачанное |
 | `TELEGRAM_MCP_DIALOG_LIMIT` | сколько диалогов кэшировать для поиска по названию |
 | `TELEGRAM_MCP_MAX_MESSAGES` | потолок сообщений на один вызов |
+| `TELEGRAM_MCP_LOG_LEVEL` | уровень логов teleproto в stderr: `none` (по умолчанию), `error`, `warn`, `info`, `debug` |
+| `TELEGRAM_MCP_HEALTH_INTERVAL` | период проверки соединения в секундах (по умолчанию 60, `0` — выключить) |
 
 ## Безопасность
 
